@@ -287,21 +287,56 @@ vector<vertex<T>> directed_graph<T>::get_second_order_neighbors(const int& u_id)
 { 
 	vector<vertex<T>> second_order_neighbours;
 	
-	/* Should accomplish this by running neighbours function on every neighbour of u_id.*
-	 * If this works, maybe implement this recursively to get all reachable?			*/
+	/* Should accomplish this by running neighbours function on every neighbour of u_id.*/
+	vector<vertex<T>> firstNeighbours;
+	firstNeighbours = get_neighbours(u_id);
 	
+	for (auto v : firstNeighbours) {
+		vector<vertex<T>> neighbourNeighbours = get_neighbours(v.id);
+		//Need to make sure the second order aren't same as original vertex
+		for (auto v : neighbourNeighbours) {
+			if (v.id != u_id) {
+				second_order_neighbours.push_back(v);
+			}
+		}
+	}
+	
+
+	//Following output is very useful for testing.
+	
+	cout << "Second order neighbours of " << u_id << ": {";
+	for (auto v : second_order_neighbours) {
+		 cout << v.id << ", ";
+	}
+	cout << "}." << endl;
 	
 	return second_order_neighbours; 
 }
 
+//Returns true if the second vertex is reachable from the first 
+//(can you follow a path of out-edges to get from the first to the second?). Returns false otherwise.
 template <typename T>
-bool directed_graph<T>::reachable(const int& u_id, const int& v_id) const { return false; }
+bool directed_graph<T>::reachable(const int& u_id, const int& v_id) const 
+{ 
+	
+	return false; 
+}
 
+// Return true if the graph contains cycles (there is a path from any vertices directly/indirectly to itself), false otherwise.
 template <typename T>
-bool directed_graph<T>::contian_cycles() const { return false; }
+bool directed_graph<T>::contian_cycles() const 
+{ 
 
+	return false; 
+}
+
+//Returns the vertices of the graph in the order they are visited in by a 
+//depth-first traversal starting at the given vertex.
 template <typename T>
-vector<vertex<T>> directed_graph<T>::depth_first(const int& u_id) { return vector<vertex<T>>(); }
+vector<vertex<T>> directed_graph<T>::depth_first(const int& u_id) 
+{ 
+	return vector<vertex<T>>(); 
+}
 
 template <typename T>
 vector<vertex<T>> directed_graph<T>::breadth_first(const int& u_id) { return vector<vertex<T>>(); }

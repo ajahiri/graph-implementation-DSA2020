@@ -1,6 +1,7 @@
 #include "directed_graph.cpp"
 
 int main() {
+	/*
 	directed_graph<int> g;
 
 
@@ -30,17 +31,19 @@ int main() {
 
 	cout << "Printing with " << g.num_edges() << " edges  and " << g.num_vertices() << " vertices:" << endl;
 	g.print_matrix();
-		
+	*/
 	/* Test Delete
 	g.remove_vertex(0); //After this remove, 0 now corresponds to B not A and IDs are decremented accordingly.	
 	cout << "Printing with " << g.num_edges() << " edges  and " << g.num_vertices() << " vertices:" << endl;
 	g.print_matrix();
 	*/
-	
+	/*
 	cout << "(3) should have in-degree of " << g.in_degree(3) << endl;
 	cout << "(3) should have out-degree of " << g.out_degree(3) << endl;
 	cout << "(3) should have total degree of " << g.degree(3) << endl;
-	g.get_neighbours(3);
+	g.get_neighbours(0);
+	g.get_second_order_neighbors(0);
 	
 	cin.get(); //Don't stop debugging
+	*/
 }
