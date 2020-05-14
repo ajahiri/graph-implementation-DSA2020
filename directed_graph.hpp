@@ -5,6 +5,7 @@
 #include<string>
 #include<vector>
 #include<queue>
+#include<algorithm> //For using "sort()"
 // include more libraries here if you need to
 
 using namespace std; // the standard namespace are here just in case.
@@ -18,12 +19,41 @@ class vertex {
 public:
 	int id; // unique identifer for each vertex
 	T weight; // int, double, char, string, ...
-	int pos; 
+	int pos; //Vertex position in adj_matrix, initialised on add_vertex()
 
 	vertex(int v_id, T v_weight) : id(v_id), weight(v_weight) { // constructor
 	}
 
 	// add more functions here if you need to
+	/* For use with std::sort() function to sort vertices by weight. */
+	bool operator > (const vertex<T>& v) const 
+	{
+		return (weight > v.weight); /* Decreasing sort by weight. */
+	}
+};
+
+/*
+	graph_edge class
+*/
+/* We need an edge struct only for purposes of MST function. */
+template <typename T>
+struct graph_edge {	
+	
+	int from_id; /* ID of vertex where the edge starts. */
+	int to_id; /* ID of vertex where the edge ends */
+	T weight; /* Weight of edge, maintain the use of temaplate */
+	
+	graph_edge(int from_id, int to_id, T weight) : from_id(from_id), 
+	to_id(to_id), weight(weight) { // constructor
+
+	}
+
+	/* Implementing the greater operator for graph_edge in order to use	*
+	 * std::sort() on the vector of graph_edge. 						*/
+	bool operator > (const graph_edge& edge) const
+    {
+        return (weight > edge.weight);
+    }
 };
 
 /*
@@ -86,7 +116,6 @@ public:
 	vector<vertex<T>> post_order_traversal(const int&, directed_graph<T>&); // returns the vertices in ther visitig order of a post-order traversal of the minimum spanning tree starting at the given vertex.
 
 	vector<vertex<T>> significance_sorting(); // Return a vector containing a sorted list of the vertices in descending order of their significance.
-
 };
 
 // Define all your methods down here (or move them up into the header, but be careful you don't double up). If you want to move this into another file, you can, but you should #include the file here.
@@ -519,12 +548,71 @@ vector<vertex<T>> directed_graph<T>::breadth_first(const int& u_id)
 	return searchResult; 
 }
 
+//Returns a spanning tree of the graph starting at the given vertex using the out-edges. This means every vertex in the tree is reachable from the root.
+template <typename T>
+directed_graph<T> directed_graph<T>::out_tree(const int& u_id) 
+{ 
+	/* Using kruskal's "other" algorithm (reverse-delete) in order to get MST. */
+	
+	/* We will store weights here so we can sort them (decreasing). */
+	vector<graph_edge<T>> edges_list; 
+
+	/* Make copy of the graph before we do reverse-delete */
+	directed_graph<T> mst_tree;
+	mst_tree.numEdges = this->numEdges;
+	mst_tree.adj_matrix = this->adj_matrix;
+	mst_tree.vertices = this->vertices;
+
+	/* Build our graph_edges vector by looping through the matrix. 
+	 * If we wanted to optimize for time complexity > space complexity,
+	 * I could've used another class member vector to keep track of all the edges. */
+	for(auto v : vertices) 
+	{
+		for (int i = 0; i<adj_matrix[v.pos].size(); i++) 
+		{
+			T edgeWeight = adj_matrix[v.pos][i];
+			if (edgeWeight > 0) {
+				graph_edge<T> edge(v.id, vertices[i].id, edgeWeight);
+				edges_list.push_back(edge);
+			}
+		}
+	}
+
+	/* First important step in reverse-delete, sort the edges by weight (decreasing order). */
+	sort(edges_list.begin(), edges_list.end(), greater<graph_edge<T>>()); 
+
+	/* Next part is to iterate over all the edges and delete one by one as long as they don't cause				*
+	 * the graph to become disconnected, we can do this by looking at the degree of the vertices in question	*
+	 * during deletion.	 																						*/
+	for (int i=0; i < edges_list.size(); i++) {
+		/* (MST RULE) WHEN |E'|=|V'|-1 BREAK */
+		/* Remove the edge, then check if connected using DFS, if the search returns less vectors than there are in
+		 * original graph then the graph has become disconnected due to deletion, put it back and move to next edge, otherwise
+		 * the deletion has caused graph to remain connected therefore we can decrement the i and move to next edge. */
+		graph_edge<T> deletedEdge = edges_list[i]; /* Save this edge in case it causes  */
+		mst_tree.remove_edge(edges_list[i].from_id, edges_list[i].to_id); /* Remove the edge in the graph */
+
+		vector<vertex<T>> dfsResult = mst_tree.depth_first(u_id);
+
+		if (dfsResult.size() == mst_tree.vertices.size()) 
+		{
+			/* After this if, we know that the graph is NOT disconnected, we can proceed with deletion from list. */
+			edges_list.erase(edges_list.begin() + i);
+			i--; /* Need to decrement i as vector size has changed. */
+		} else {
+			/* Put the edge back in the graph if it has caused a disconnected graph. 	*
+			 * And do NOT delete the edge from our list. 								*/
+			mst_tree.add_edge(deletedEdge.from_id, deletedEdge.to_id, deletedEdge.weight); 
+		}
+	} 
+	return mst_tree; /* Return the results */
+}
 
 template <typename T>
-directed_graph<T> directed_graph<T>::out_tree(const int& u_id) { return directed_graph<T>(); }
-
-template <typename T>
-vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, directed_graph<T>& mst) { return vector<vertex<T>>(); }
+vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, directed_graph<T>& mst) 
+{ 
+	return vector<vertex<T>>(); 
+}
 
 template <typename T>
 vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directed_graph<T>& mst) { return vector<vertex<T>>(); }
@@ -532,7 +620,17 @@ vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directe
 template <typename T>
 vector<vertex<T>> directed_graph<T>::post_order_traversal(const int& u_id, directed_graph<T>& mst) { return vector<vertex<T>>(); }
 
+// Return a vector containing a sorted list of the vertices in descending order of their significance.
 template <typename T>
-vector<vertex<T>> directed_graph<T>::significance_sorting() { return vector<vertex<T>>(); }
+vector<vertex<T>> directed_graph<T>::significance_sorting() 
+{ 
+	vector<vertex<T>> sortedVertices = vertices;
+
+	/* If time permits, I want to implement a method to sort by a new vertex member named "influence".
+	 * Influence variable will be calculated with weighted ratio between followers (vertex weight) and likability (incoming edge weight). */
+	sort(sortedVertices.begin(), sortedVertices.end(), greater<vertex<T>>());  /* Sort by vertex weight only. */
+
+	return sortedVertices; 
+}
 
 #endif
