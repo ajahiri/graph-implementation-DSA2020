@@ -7,6 +7,7 @@
 #include<queue>
 #include<stack>
 #include<algorithm> //For using "sort()"
+// include more libraries here if you need to
 
 using namespace std; // the standard namespace are here just in case.
 
@@ -20,7 +21,7 @@ public:
 	int id; // unique identifer for each vertex
 	T weight; // int, double, char, string, ...
 	int pos; //Vertex position in adj_matrix, initialised on add_vertex()
-	bool nullVertex; // To be able to return a null vertex
+	bool nullVertex;
 
 	vertex(int v_id, T v_weight) : id(v_id), weight(v_weight) { // constructor
 		nullVertex = false;
@@ -44,6 +45,7 @@ struct graph_edge {
 	int from_id; /* ID of vertex where the edge starts. */
 	int to_id; /* ID of vertex where the edge ends */
 	T weight; /* Weight of edge, maintain the use of temaplate */
+	
 	
 	graph_edge(int from_id, int to_id, T weight) : from_id(from_id), 
 	to_id(to_id), weight(weight) { // constructor
@@ -114,7 +116,7 @@ public:
 	directed_graph<T> out_tree(const int&); //Returns a spanning tree of the graph starting at the given vertex using the out-edges. This means every vertex in the tree is reachable from the root.
 
 	vector<vertex<T>> pre_order_traversal(const int&, directed_graph<T>&); // returns the vertices in the visiting order of a pre-order traversal of the minimum spanning tree starting at the given vertex.
-
+	
 	vector<vertex<T>> in_order_traversal(const int&, directed_graph<T>&); // returns the vertices in the visiting order of an in-order traversal of the minimum spanning tree starting at the given vertex.
 	void inOrderUtil(vector<vertex<T>>&, const vertex<T>&, directed_graph<T>&);
 
@@ -166,9 +168,7 @@ vertex<T> directed_graph<T>::get_vertex(const int& u_id)
 			return vertices[i];
 		}
 	}
-	vertex<int> nullVertex(0,0);
-	nullVertex.nullVertex = true;
-	return nullVertex;
+	return vertices[0];
 } 
 
 //Defined by me, used to check wheter a vector contains a particular vertex
@@ -630,7 +630,7 @@ vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, direct
 	/* Neighbours of vertex of id u_id should be the "left" and "right" children respectively.	*
 	 * We can iterate over this using the pre_order algorithm from wk6 lecture slides.		 	*/
 	vector<vertex<T>> pre_order_result;
-	return pre_order_result; 
+	
 	stack<vertex<T>> s;
 
 	vertex<T>* current = new vertex<T>(0,0);
@@ -657,7 +657,7 @@ vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, direct
 	
 	delete current; //Delete "current" from heap as we initialised it using 'new'.
 
-	
+	return pre_order_result; 
 }
 
 template <typename T>
@@ -665,7 +665,7 @@ vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directe
 { 
 	vector<vertex<T>> in_order_results;
 
-	//inOrderUtil(in_order_results, mst.get_vertex(u_id), mst);
+	inOrderUtil(in_order_results, mst.get_vertex(u_id), mst);
 
 	return in_order_results;
 }
@@ -704,7 +704,7 @@ vector<vertex<T>> directed_graph<T>::post_order_traversal(const int& u_id, direc
 { 
 	vector<vertex<T>> post_order_results;
 
-	//postOrderUtil(post_order_results, mst.get_vertex(u_id), mst);
+	postOrderUtil(post_order_results, mst.get_vertex(u_id), mst);
 
 	return post_order_results;
 }
@@ -718,19 +718,19 @@ void directed_graph<T>::postOrderUtil(vector<vertex<T>>& results, const vertex<T
 		//Need to use if statements to make sure we don't get segmentation errors
 		//If left child exists do recursion with normal vertex, otherwise pass a nullvertrex.
 		if (vertexChildren.size() >= 1) { 
-			inOrderUtil(results, vertexChildren[0], mst);
+			postOrderUtil(results, vertexChildren[0], mst);
 		} else {
 			vertex<T> nullV(0,0);
 			nullV.nullVertex = true;
-			inOrderUtil(results, nullV, mst);
+			postOrderUtil(results, nullV, mst);
 		}
 		//If right child exists do recursion with normal vertex, otherwise pass a nullvertrex.
 		if (vertexChildren.size() > 1) {
-			inOrderUtil(results, vertexChildren[1], mst);
+			postOrderUtil(results, vertexChildren[1], mst);
 		} else {
 			vertex<T> nullV(0,0); //Create a fresh vertex
 			nullV.nullVertex = true; //Make it a null vertex
-			inOrderUtil(results, nullV, mst); 
+			postOrderUtil(results, nullV, mst); 
 		};
 		
 		results.push_back(n);
