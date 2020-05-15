@@ -10,12 +10,14 @@ int main() {
 	vertex<int> vc = vertex<int>(2, 400);		//C
 	vertex<int> vd = vertex<int>(3, 710);		//D
 	vertex<int> ve = vertex<int>(4, 221);		//E
+	vertex<int> vf = vertex<int>(5, 865);		//E
 
 	g.add_vertex(va);
 	g.add_vertex(vb);
 	g.add_vertex(vc);
 	g.add_vertex(vd);
 	g.add_vertex(ve);
+	g.add_vertex(vf);
 
 	//g.print_matrix();
 	
@@ -26,6 +28,7 @@ int main() {
 	g.add_edge(3, 2, 7);
 	g.add_edge(3, 0, 1);
 	g.add_edge(3, 4, 5);
+	g.add_edge(1, 5, 2);
 	//g.add_edge(4, 0, 5);
 	
 
@@ -73,6 +76,45 @@ int main() {
 
 	//Test Cyclic
 	cout << "Graph cyclic? " << g.contain_cycles() << endl;
+
+	cout << "-------------- PRINTING MST DATA --------------" << endl;
+	directed_graph<int> mst_tree = g.out_tree(0);
+	mst_tree.print_matrix();
+
+	cout << endl;
+
+	cout << "SIGNIFICANCE SORT Results: (ID, WEIGHT)" << endl;
+	for (auto v : g.significance_sorting()) {
+		cout << "(" << v.id << ", " << v.weight << ") -> ";
+	}
+	cout << "X" << endl;
+
+	cout << endl;
+
+	cout << "PRE_ORDER Results: (ID, WEIGHT)" << endl;
+	
+	for (auto v : g.pre_order_traversal(mst_tree.get_vertex(0).id, mst_tree)) {
+		cout << "(" << v.id << ", " << v.weight << ") -> ";
+	}
+	cout << "X" << endl;
+
+	cout << endl;
+
+	cout << "IN_ORDER Results: (ID, WEIGHT)" << endl;
+	for (auto v : g.in_order_traversal(mst_tree.get_vertex(0).id, mst_tree)) {
+		cout << "(" << v.id << ", " << v.weight << ") -> ";
+	}
+	cout << "X" << endl;
+
+	cout << endl;
+
+	cout << "POST_ORDER Results: (ID, WEIGHT)" << endl;
+	for (auto v : g.post_order_traversal(mst_tree.get_vertex(0).id, mst_tree)) {
+		cout << "(" << v.id << ", " << v.weight << ") -> ";
+	}
+	cout << "X" << endl;
+
+	cout << "----------- STOP PRINTING MST DATA ------------" << endl;
 
 	/*
 	directed_graph<double> g1;

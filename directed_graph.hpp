@@ -5,8 +5,8 @@
 #include<string>
 #include<vector>
 #include<queue>
+#include<stack>
 #include<algorithm> //For using "sort()"
-// include more libraries here if you need to
 
 using namespace std; // the standard namespace are here just in case.
 
@@ -20,8 +20,10 @@ public:
 	int id; // unique identifer for each vertex
 	T weight; // int, double, char, string, ...
 	int pos; //Vertex position in adj_matrix, initialised on add_vertex()
+	bool nullVertex; // To be able to return a null vertex
 
 	vertex(int v_id, T v_weight) : id(v_id), weight(v_weight) { // constructor
+		nullVertex = false;
 	}
 
 	// add more functions here if you need to
@@ -112,8 +114,12 @@ public:
 	directed_graph<T> out_tree(const int&); //Returns a spanning tree of the graph starting at the given vertex using the out-edges. This means every vertex in the tree is reachable from the root.
 
 	vector<vertex<T>> pre_order_traversal(const int&, directed_graph<T>&); // returns the vertices in the visiting order of a pre-order traversal of the minimum spanning tree starting at the given vertex.
+
 	vector<vertex<T>> in_order_traversal(const int&, directed_graph<T>&); // returns the vertices in the visiting order of an in-order traversal of the minimum spanning tree starting at the given vertex.
+	void inOrderUtil(vector<vertex<T>>&, const vertex<T>&, directed_graph<T>&);
+
 	vector<vertex<T>> post_order_traversal(const int&, directed_graph<T>&); // returns the vertices in ther visitig order of a post-order traversal of the minimum spanning tree starting at the given vertex.
+	void postOrderUtil(vector<vertex<T>>&, const vertex<T>&, directed_graph<T>&);
 
 	vector<vertex<T>> significance_sorting(); // Return a vector containing a sorted list of the vertices in descending order of their significance.
 };
@@ -160,7 +166,9 @@ vertex<T> directed_graph<T>::get_vertex(const int& u_id)
 			return vertices[i];
 		}
 	}
-	return vertices[0];
+	vertex<int> nullVertex(0,0);
+	nullVertex.nullVertex = true;
+	return nullVertex;
 } 
 
 //Defined by me, used to check wheter a vector contains a particular vertex
@@ -559,13 +567,14 @@ directed_graph<T> directed_graph<T>::out_tree(const int& u_id)
 
 	/* Make copy of the graph before we do reverse-delete */
 	directed_graph<T> mst_tree;
-	mst_tree.numEdges = this->numEdges;
-	mst_tree.adj_matrix = this->adj_matrix;
-	mst_tree.vertices = this->vertices;
+	mst_tree.numEdges = numEdges;
+	mst_tree.adj_matrix = adj_matrix;
+	mst_tree.vertices = vertices;
 
-	/* Build our graph_edges vector by looping through the matrix. 
-	 * If we wanted to optimize for time complexity > space complexity,
-	 * I could've used another class member vector to keep track of all the edges. */
+	/* Build our graph_edges vector by looping through the matrix. 							*
+	 * If we wanted to optimize for time complexity > space complexity,						*
+	 * I could've used another class member vector to keep track of all the edges. 			*
+	 * Although, this approach would cause increased time complexity for add/remove edge.	*/
 	for(auto v : vertices) 
 	{
 		for (int i = 0; i<adj_matrix[v.pos].size(); i++) 
@@ -582,10 +591,12 @@ directed_graph<T> directed_graph<T>::out_tree(const int& u_id)
 	sort(edges_list.begin(), edges_list.end(), greater<graph_edge<T>>()); 
 
 	/* Next part is to iterate over all the edges and delete one by one as long as they don't cause				*
-	 * the graph to become disconnected, we can do this by looking at the degree of the vertices in question	*
-	 * during deletion.	 																						*/
+	 * the graph to become disconnected.	 																	*/
 	for (int i=0; i < edges_list.size(); i++) {
-		/* (MST RULE) WHEN |E'|=|V'|-1 BREAK */
+		/* (MST RULE) WHEN |E'|=|V'|-1 BREAK 														*
+		 * Not strictly needed as further deletions will cause disconnected graph, 					*
+		 * but this can reduce time complexity of the function as it will stop when we have an MST	*/
+		if (edges_list.size() == mst_tree.vertices.size()-1) break;
 		/* Remove the edge, then check if connected using DFS, if the search returns less vectors than there are in
 		 * original graph then the graph has become disconnected due to deletion, put it back and move to next edge, otherwise
 		 * the deletion has caused graph to remain connected therefore we can decrement the i and move to next edge. */
@@ -594,7 +605,7 @@ directed_graph<T> directed_graph<T>::out_tree(const int& u_id)
 
 		vector<vertex<T>> dfsResult = mst_tree.depth_first(u_id);
 
-		if (dfsResult.size() == mst_tree.vertices.size()) 
+		if (dfsResult.size() == mst_tree.vertices.size()) //Check if graph is connected
 		{
 			/* After this if, we know that the graph is NOT disconnected, we can proceed with deletion from list. */
 			edges_list.erase(edges_list.begin() + i);
@@ -605,20 +616,126 @@ directed_graph<T> directed_graph<T>::out_tree(const int& u_id)
 			mst_tree.add_edge(deletedEdge.from_id, deletedEdge.to_id, deletedEdge.weight); 
 		}
 	} 
+
 	return mst_tree; /* Return the results */
 }
 
 template <typename T>
 vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, directed_graph<T>& mst) 
 { 
-	return vector<vertex<T>>(); 
+	/* Implemented using iterative approach. I want to get a mix of implementations to gain an understanding	*
+	 * of how both work. If this was not the case, I would use recursive implementation for all since they 		*
+	 * so short and dead simple to write.																		*/
+	 
+	/* Neighbours of vertex of id u_id should be the "left" and "right" children respectively.	*
+	 * We can iterate over this using the pre_order algorithm from wk6 lecture slides.		 	*/
+	vector<vertex<T>> pre_order_result;
+	return pre_order_result; 
+	stack<vertex<T>> s;
+
+	vertex<T>* current = new vertex<T>(0,0);
+	*current = mst.get_vertex(u_id); //Must be in MST context
+
+	
+	while (current != nullptr) {
+		//DEBUG cout << "Current vertex in pre_order (" << current->id << ") " << endl;
+		pre_order_result.push_back(*current); //Visit Current
+		vector<vertex<T>> vertexChildren = mst.get_neighbours(current->id);
+		/* vertexChildren[0] should be "left" and vertexChildren[1] should be right child.	*
+		 * Number of neighbours(children) of a vertex in MST should not be more than 		*
+		 * 2 for every vertex. 																*/
+		if (vertexChildren.size() > 1) s.push(vertexChildren[1]); 	//if current.rightChild() != null
+		if (vertexChildren.size() >= 1) s.push(vertexChildren[0]); 	//if current.leftChild() != null
+		if (s.size() == 0) { //To avoid segmentation fault, on end, set current to nullptr
+			current = nullptr;
+		} else { //Otherwise, continue as normal
+			//Below two lines are equivalent to "current = stack.pop()"
+			*current = s.top();
+			s.pop();
+		}
+	}
+	
+	delete current; //Delete "current" from heap as we initialised it using 'new'.
+
+	
 }
 
 template <typename T>
-vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directed_graph<T>& mst) { return vector<vertex<T>>(); }
+vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directed_graph<T>& mst) 
+{ 
+	vector<vertex<T>> in_order_results;
+
+	//inOrderUtil(in_order_results, mst.get_vertex(u_id), mst);
+
+	return in_order_results;
+}
+template <typename T>
+void directed_graph<T>::inOrderUtil(vector<vertex<T>>& results, const vertex<T>& n, directed_graph<T>& mst) 
+{ 
+	if (n.nullVertex) {
+		return;
+	} else {
+		vector<vertex<T>> vertexChildren = mst.get_neighbours(n.id);
+		//Need to use if statements to make sure we don't get segmentation errors
+		//If left child exists do recursion with normal vertex, otherwise pass a nullvertrex.
+		if (vertexChildren.size() >= 1) { 
+			inOrderUtil(results, vertexChildren[0], mst);
+		} else {
+			vertex<T> nullV(0,0);
+			nullV.nullVertex = true;
+			inOrderUtil(results, nullV, mst);
+		}
+
+		results.push_back(n);
+
+		//If right child exists do recursion with normal vertex, otherwise pass a nullvertrex.
+		if (vertexChildren.size() > 1) {
+			inOrderUtil(results, vertexChildren[1], mst);
+		} else {
+			vertex<T> nullV(0,0); //Create a fresh vertex
+			nullV.nullVertex = true; //Make it a null vertex
+			inOrderUtil(results, nullV, mst); 
+		};
+	}
+}
 
 template <typename T>
-vector<vertex<T>> directed_graph<T>::post_order_traversal(const int& u_id, directed_graph<T>& mst) { return vector<vertex<T>>(); }
+vector<vertex<T>> directed_graph<T>::post_order_traversal(const int& u_id, directed_graph<T>& mst) 
+{ 
+	vector<vertex<T>> post_order_results;
+
+	//postOrderUtil(post_order_results, mst.get_vertex(u_id), mst);
+
+	return post_order_results;
+}
+template <typename T>
+void directed_graph<T>::postOrderUtil(vector<vertex<T>>& results, const vertex<T>& n, directed_graph<T>& mst) 
+{ 
+	if (n.nullVertex) {
+		return;
+	} else {
+		vector<vertex<T>> vertexChildren = mst.get_neighbours(n.id);
+		//Need to use if statements to make sure we don't get segmentation errors
+		//If left child exists do recursion with normal vertex, otherwise pass a nullvertrex.
+		if (vertexChildren.size() >= 1) { 
+			inOrderUtil(results, vertexChildren[0], mst);
+		} else {
+			vertex<T> nullV(0,0);
+			nullV.nullVertex = true;
+			inOrderUtil(results, nullV, mst);
+		}
+		//If right child exists do recursion with normal vertex, otherwise pass a nullvertrex.
+		if (vertexChildren.size() > 1) {
+			inOrderUtil(results, vertexChildren[1], mst);
+		} else {
+			vertex<T> nullV(0,0); //Create a fresh vertex
+			nullV.nullVertex = true; //Make it a null vertex
+			inOrderUtil(results, nullV, mst); 
+		};
+		
+		results.push_back(n);
+	}
+}
 
 // Return a vector containing a sorted list of the vertices in descending order of their significance.
 template <typename T>
