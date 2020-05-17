@@ -83,9 +83,9 @@ int main() {
 
 	cout << endl;
 
-	cout << "SIGNIFICANCE SORT Results: (ID, WEIGHT)" << endl;
+	cout << "SIGNIFICANCE SORT Results: (ID, POPULARITY)" << endl;
 	for (auto v : g.significance_sorting()) {
-		cout << "(" << v.id << ", " << v.weight << ") -> ";
+		cout << "(" << v.id << ", " << v.popularity << ") -> ";
 	}
 	cout << "X" << endl;
 
@@ -116,54 +116,5 @@ int main() {
 
 	cout << "----------- STOP PRINTING MST DATA ------------" << endl;
 
-	/*
-	directed_graph<double> g1;
-
-	vertex<double> v0(0, 0.25); 
-	vertex<double> v1(1, 1.41);
-	vertex<double> v2(2, 2.32);
-	vertex<double> v3(3, 3.66);
-	vertex<double> v4(4, 4.12);
-
-	g1.add_vertex(v0);
-	g1.add_vertex(v1);
-	g1.add_vertex(v2);
-	g1.add_vertex(v3);
-	g1.add_vertex(v4);
-
-    g1.add_edge(0, 2, 10);
-	g1.add_edge(0, 3, 20);
-	g1.add_edge(2, 0, 30);
-	g1.add_edge(2, 4, 40);
-	g1.add_edge(4, 0, 50);
-	g1.add_edge(3, 4, 60);
-    
-	cout << "all 2nd-order neighbours of 0: ";
-	vector<vertex<double>> second_neighbour_list0 = g1.get_second_order_neighbours(0);
-	for (vertex<double> snb : second_neighbour_list0) {
-	 	cout << "(" << snb.id << ", " << snb.weight << ") ";
-	}
-	cout << endl;
-
-    cout << "all 2nd-order neighbours of 1: ";
-	vector<vertex<double>> second_neighbour_list1 = g1.get_second_order_neighbours(1);
-	for (vertex<double> snb : second_neighbour_list1) {
-	 	cout << "(" << snb.id << ", " << snb.weight << ") ";
-	}
-	cout << endl;
-
-    cout << "all 2nd-order neighbours of 2: ";
-	vector<vertex<double>> second_neighbour_list2 = g1.get_second_order_neighbours(2);
-	for (vertex<double> snb : second_neighbour_list2) {
-	 	cout << "(" << snb.id << ", " << snb.weight << ") ";
-	}
-	cout << endl;
-
-    cout << "all 2nd-order neighbours of 3: ";
-	vector<vertex<double>> second_neighbour_list3 = g1.get_second_order_neighbours(3);
-	for (vertex<double> snb : second_neighbour_list3) {
-	 	cout << "(" << snb.id << ", " << snb.weight << ") ";
-	}
-	cout << endl;
-	*/
+	cout << "----------- END MAIN OUTPUT ------------" << endl;
 }

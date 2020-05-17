@@ -21,9 +21,12 @@ public:
 	int id; // unique identifer for each vertex
 	T weight; // int, double, char, string, ...
 	int pos; //Vertex position in adj_matrix, initialised on add_vertex()
-	bool nullVertex;
+	int popularity; //Total of vertex weight (number of followers) and 
+					//how many times they were liked by other vertices. Calculated during sort.
+	bool nullVertex; //Bool to be used to indicate a nullVertex, useful for MST traversal functions
 
 	vertex(int v_id, T v_weight) : id(v_id), weight(v_weight) { // constructor
+		popularity = 0;
 		nullVertex = false;
 	}
 
@@ -31,7 +34,7 @@ public:
 	/* For use with std::sort() function to sort vertices by weight. */
 	bool operator > (const vertex<T>& v) const 
 	{
-		return (weight > v.weight); /* Decreasing sort by weight. */
+		return (popularity > v.popularity); /* Decreasing sort by weight. */
 	}
 };
 
@@ -233,36 +236,27 @@ void directed_graph<T>::add_vertex(const vertex<T>& u)
 {
 	//Make sure vertex with that id is not already in the graph, avoiding duplicates
 	if (contains(u.id)) {
-		//cout << "Vertex already exists in graph, cannot add identical vertex." << endl;
+		//DEBUG cout << "Vertex already exists in graph, cannot add identical vertex." << endl;
 		return;
 	}
 
-	vertex<T> mappedU = u; //id, weight, position
-	mappedU.pos = vertices.size();
-
-	//id should be the index of the element in the vector (i.e. "A" is index 0)
+	/* Create a "mapped" vertex to be pushed with the right .pos in accordance to the pre-existing matrix. 	*
+	 * This was added as I did not take into account that IDs could be different to the vertex's position. 	*/
+	vertex<T> mappedU = u; //Copy the vertex with id, weight, position
+	mappedU.pos = vertices.size(); //Set position to correct place for proper representation in both vertices vector and adj_matrix
 	vertices.push_back(mappedU); //Add the vertex to the vertices list
 	
-	//Initialise this new row with zeros
-	vector<T> vertexRow;
+	/* Initialise a vertex's row with 0s, in the context of the adj_matrix, we are initialising the vertex's row	*
+	 * with no relationships/edges. 																				*/
+	vector<T> vertexRow(vertices.size(), 0);
+	adj_matrix.push_back(vertexRow); //Push the new row to the adj_matrix, essentially adding the vertex to the matrix.
 	
-	//DEBUG cout << "Amt Vertices: " << vertices.size() << endl;
-
-	//Build correct amt of zeros depending on current graph size.
-	for (int i = 0; i < vertices.size(); i++) {
-		vertexRow.push_back(0);
-	}
-
-	adj_matrix.push_back(vertexRow); //Push back to vector row (from)
-	
-	/* Need to append zeros to the previous rows (excluding the one	*
+	/* Need to append zeros to the previous rows (EXcluding the one	*
 	 * we just added) in order to maintain a square matrix. 		*/
-	 //Also add zeros to all other rows that already exist
 	for (int i = 0; i < adj_matrix.size() - 1; i++) {
 		//DEBUGcout << "Pushing zero at index " << i << endl;
 		adj_matrix[i].push_back(0); 
 	} 
-	//cout << "Added vertex id: " << u.id << " weight: " << u.weight << endl;
 }
 
 //Adds a weighted edge from the first vertex to the second.
@@ -311,27 +305,24 @@ void directed_graph<T>::remove_vertex(const int& u_id)
 	//Get pos of vertex from id
 	int posU = get_vertex(u_id).pos;
 
-	//Debugging
-	//cout << "Removing vertex id: " << u_id << " weight: " << vertices[u_id].weight << endl;
+	//DEBUG cout << "Removing vertex id: " << u_id << " weight: " << vertices[u_id].weight << endl;
 	
 	/* Before we remove the vertex, calc number of edges that 	*
 	 * will be removed in order to update numEdges. This needs	*
-	 * to be done before removing the vertex.							*/
+	 * to be done before removing the vertex.					*/
 	numEdges -= degree(posU);
+
 	vertices.erase(vertices.begin() + posU); //Remove vertex from vertices list
 
-	/*	Following line deletes the row not column.							*
-	 *	Should remove the vertex from the adj_matrix which also holds	*
-	 *	the respective weights and **from** relationships. 				*/
+	/*	Following line delete the row not column from the adj_matrix. */
 	adj_matrix.erase(adj_matrix.begin() + posU);
 
-	//Need to remove the corresponding column for that vertex first.
-	/* Also update vertex ids for those vertices		*
-	 * greater than the one being removed.				*/
+	/* Update vertex positions for those vertices greater than the one being removed as well as *
+	 * zeroing the associated column 'to' of the vertex from the adj_matrix.					*/
 	for (int i = 0; i < adj_matrix.size(); i++) {
 		//Remove associated column for vertex
 		adj_matrix[i].erase(adj_matrix[i].begin() + posU);
-		//Update vertex positions as vector has changed
+		//Update vertex positions as vector size has changed
 		if (i >= posU) vertices[i].pos--;
 	}
 }
@@ -355,8 +346,9 @@ void directed_graph<T>::remove_edge(const int& u_id, const int& v_id)
 	// Get positions of the vectors
 	int posU = get_vertex(u_id).pos;
 	int posV = get_vertex(v_id).pos;
+
 	adj_matrix[posU][posV] = 0; //Zeroing the relationship "removes" the edge
-	numEdges--;
+	numEdges--; //Decrement numEdges to reflect the change.
 }
 
 //Returns number of edges coming in to a vertex.
@@ -398,6 +390,7 @@ template <typename T>
 size_t directed_graph<T>::degree(const int& u_id) 
 { 
 	//Total degree should be sum of in and out degrees
+	//Could be slightly faster by combining the two loops into one.
 	return in_degree(u_id) + out_degree(u_id); 
 }
 
@@ -412,13 +405,13 @@ size_t directed_graph<T>::num_vertices() const
 template <typename T>
 size_t directed_graph<T>::num_edges() const
 { 
-	return numEdges; 
+	return numEdges; //I'm keeping track of this so it is easy to return
 }
 
 //Returns a vector containing all the vertices.
 template <typename T>
 vector<vertex<T>> directed_graph<T>::get_vertices() { 
-	// Luckily, I keep track of all vertices in a separate vector "vertices"
+	// I keep track of all vertices in a separate vector "vertices"
 	return vertices; 
 }
 
@@ -438,14 +431,14 @@ vector<vertex<T>> directed_graph<T>::get_neighbours(const int& u_id)
 	}
 	
 	//To test, good note: num of neighbours should be == to out_degree
-	//Following output is very useful for testing.
-	/*
+	/*DEBUG
 	cout << "Neighbours of " << u_id << ": {";
 	for (auto v : neighbours) {
 		 cout << v.id << ", ";
 	}
 	cout << "}." << endl;
 	*/
+
 	return neighbours; 
 }
 
@@ -460,6 +453,8 @@ vector<vertex<T>> directed_graph<T>::get_second_order_neighbours(const int& u_id
 	vector<vertex<T>> firstNeighbours;
 	firstNeighbours = get_neighbours(u_id);
 	
+	/* In worst case would take n^2 time if all vertices are connected to all vertices but in most cases, 	*
+	 * the number of neighbours and second neighbours should be some subset of n. 							*/
 	for (auto v : firstNeighbours) {
 		vector<vertex<T>> secondNeighbours = get_neighbours(v.id); //Get neighbours of neighbours
 		for (auto u : secondNeighbours) {
@@ -469,29 +464,30 @@ vector<vertex<T>> directed_graph<T>::get_second_order_neighbours(const int& u_id
 		}
 	}
 
-	//Following output is useful for testing.
-	/*
+	/*DEBUG
 	cout << second_order_neighbours.size() << " second order neighbours of " << u_id << ": {";
 	for (auto v : second_order_neighbours) {
 		 cout << v.id << ", ";
 	}
 	cout << "}." << endl;
 	*/
+
 	return second_order_neighbours; 
 }
 
-//Returns true if the second vertex is reachable from the first (can you follow a path of out-edges to get from the first to the second?). 
-//Returns false otherwise.
+//Returns true if the second vertex is reachable from the first (can you follow a path of out-edges to get from the first to the second?).
 template <typename T>
 bool directed_graph<T>::reachable(const int& u_id, const int& v_id) 
 {
-	return vector_contains(depth_first(u_id), v_id);
+	return vector_contains(depth_first(u_id), v_id); //Use depth first search to determine reachability
 }
 
 // Return true if the graph contains cycles (there is a path from any vertices directly/indirectly to itself), false otherwise.
 template <typename T>
 bool directed_graph<T>::contain_cycles() 
 { 
+	/* Main idea is to use DFS to get all the possible vertices that can have a "back edge" to any other vertex. If a back edge	*
+	 * exists, there must be a cycle in the graph.																				*/
 	for (auto v : vertices) {
 		vector<vertex<T>> DFSResult = depth_first(v.id);
 		/*At this point we need to check for back edges for every vertex in DFSResult, we can do this by looping through the	*
@@ -620,22 +616,22 @@ directed_graph<T> directed_graph<T>::out_tree(const int& u_id)
 	return mst_tree; /* Return the results */
 }
 
+// returns the vertices in the visiting order of a pre-order traversal of the minimum spanning tree starting at the given vertex.
 template <typename T>
 vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, directed_graph<T>& mst) 
 { 
 	/* Implemented using iterative approach. I want to get a mix of implementations to gain an understanding	*
 	 * of how both work. If this was not the case, I would use recursive implementation for all since they 		*
-	 * so short and dead simple to write.																		*/
+	 * so short and easier to write.																			*/
 	 
 	/* Neighbours of vertex of id u_id should be the "left" and "right" children respectively.	*
-	 * We can iterate over this using the pre_order algorithm from wk6 lecture slides.		 	*/
-	vector<vertex<T>> pre_order_result;
+	 * We can iterate over this using the pre_order iterative algorithm from wk6 lecture slides.*/
+	vector<vertex<T>> pre_order_result; //Initialise the results vector to be pushed to.
 	
-	stack<vertex<T>> s;
+	stack<vertex<T>> s; //Initialise the stack
 
-	vertex<T>* current = new vertex<T>(0,0);
-	*current = mst.get_vertex(u_id); //Must be in MST context
-
+	vertex<T>* current = new vertex<T>(0,0); //A pointer type was used to implement this as we can't equate a vertex to 'null'.
+	*current = mst.get_vertex(u_id); //Must be in MST context not the directed_graph
 	
 	while (current != nullptr) {
 		//DEBUG cout << "Current vertex in pre_order (" << current->id << ") " << endl;
@@ -644,8 +640,8 @@ vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, direct
 		/* vertexChildren[0] should be "left" and vertexChildren[1] should be right child.	*
 		 * Number of neighbours(children) of a vertex in MST should not be more than 		*
 		 * 2 for every vertex. 																*/
-		if (vertexChildren.size() > 1) s.push(vertexChildren[1]); 	//if current.rightChild() != null
-		if (vertexChildren.size() >= 1) s.push(vertexChildren[0]); 	//if current.leftChild() != null
+		if (vertexChildren.size() > 1) s.push(vertexChildren[1]); 	//Equivalent: if current.rightChild() != null
+		if (vertexChildren.size() >= 1) s.push(vertexChildren[0]); 	//Equivalent: if current.leftChild() != null
 		if (s.size() == 0) { //To avoid segmentation fault, on end, set current to nullptr
 			current = nullptr;
 		} else { //Otherwise, continue as normal
@@ -657,83 +653,102 @@ vector<vertex<T>> directed_graph<T>::pre_order_traversal(const int& u_id, direct
 	
 	delete current; //Delete "current" from heap as we initialised it using 'new'.
 
-	return pre_order_result; 
+	return pre_order_result; //Return results
 }
 
+// returns the vertices in the visiting order of an in-order traversal of the minimum spanning tree starting at the given vertex.
 template <typename T>
 vector<vertex<T>> directed_graph<T>::in_order_traversal(const int& u_id, directed_graph<T>& mst) 
 { 
-	vector<vertex<T>> in_order_results;
+	vector<vertex<T>> in_order_results; //Initialise vector to store our results.
 
-	inOrderUtil(in_order_results, mst.get_vertex(u_id), mst);
+	inOrderUtil(in_order_results, mst.get_vertex(u_id), mst); //Needed in separate function to be able to keep results using recursion.
 
-	return in_order_results;
+	return in_order_results; //Return results
 }
 template <typename T>
 void directed_graph<T>::inOrderUtil(vector<vertex<T>>& results, const vertex<T>& n, directed_graph<T>& mst) 
 { 
-	if (n.nullVertex) {
-		return;
+	/* Note: In the lecture slides the code tries to equate a vertex to "null", this cannot be done literally		*
+	 * as the vertex can never be null because of its type. My solution is to have a type of vertex that can be 	*
+	 * created in which it can be classified as a null vertex that can be checked. This required a bit more code	*	
+	 * but is still essentially identical in implementation compared to the recursion code in the lecture slides.	*/
+
+	/* Avoid code duplication by creating the nullV beforehand. */
+	vertex<T> nullV(0,0); //Create a fresh vertex
+	nullV.nullVertex = true; //Make it a null vertex
+
+	if (n.nullVertex) { 
+		return; //Do nothing if we are at a nullVertex, i.e. the child vertex did not exist in this case.
 	} else {
 		vector<vertex<T>> vertexChildren = mst.get_neighbours(n.id);
-		//Need to use if statements to make sure we don't get segmentation errors
-		//If left child exists do recursion with normal vertex, otherwise pass a nullvertrex.
-		if (vertexChildren.size() >= 1) { 
-			inOrderUtil(results, vertexChildren[0], mst);
+		//Need to use if statements to make sure we don't get segmentation errors (in case a vertex has only a left child or no children).
+		
+		//If left child exists do recursion with normal vertex, otherwise pass with a nullvertrex.
+		if (vertexChildren.size() >= 1) { // Greater than or equal meaning AT LEAST the left child exists
+			inOrderUtil(results, vertexChildren[0], mst); //Trigger recursion with left child
 		} else {
-			vertex<T> nullV(0,0);
-			nullV.nullVertex = true;
-			inOrderUtil(results, nullV, mst);
+			/* Left child doesn't exist but still need to pass nullvertex to be consistent with algorithm pattern. */
+			inOrderUtil(results, nullV, mst); //Trigger recursion with null vertex.
 		}
 
-		results.push_back(n);
+		results.push_back(n); //inOrder required push_back BETWEEN ifs.
 
-		//If right child exists do recursion with normal vertex, otherwise pass a nullvertrex.
-		if (vertexChildren.size() > 1) {
-			inOrderUtil(results, vertexChildren[1], mst);
+		//If right child exists do recursion with normal vertex, otherwise pass with a nullvertrex.
+		if (vertexChildren.size() > 1) { // Greater than means the right child MUST exists (as well as left).
+			inOrderUtil(results, vertexChildren[1], mst); //Trigger recursion with right child
 		} else {
-			vertex<T> nullV(0,0); //Create a fresh vertex
-			nullV.nullVertex = true; //Make it a null vertex
-			inOrderUtil(results, nullV, mst); 
+			/* Right child doesn't exist but still need to pass nullvertex to be consistent with algorithm pattern. */
+			inOrderUtil(results, nullV, mst); //Trigger recursion with null vertex.
 		};
 	}
 }
 
+// returns the vertices in ther visitig order of a post-order traversal of the minimum spanning tree starting at the given vertex.
 template <typename T>
 vector<vertex<T>> directed_graph<T>::post_order_traversal(const int& u_id, directed_graph<T>& mst) 
 { 
-	vector<vertex<T>> post_order_results;
+	vector<vertex<T>> post_order_results; //Initialise vector to store our results.
 
-	postOrderUtil(post_order_results, mst.get_vertex(u_id), mst);
+	postOrderUtil(post_order_results, mst.get_vertex(u_id), mst); //Needed in separate function to be able to keep results using recursion.
 
-	return post_order_results;
+	return post_order_results; //Return results
 }
 template <typename T>
 void directed_graph<T>::postOrderUtil(vector<vertex<T>>& results, const vertex<T>& n, directed_graph<T>& mst) 
 { 
-	if (n.nullVertex) {
-		return;
+	/* Note: In the lecture slides the code tries to equate a vertex to "null", this cannot be done literally		*
+	 * as the vertex can never be null because of its type. My solution is to have a type of vertex that can be 	*
+	 * created in which it can be classified as a null vertex that can be checked. This required a bit more code	*	
+	 * but is still essentially identical in implementation compared to the recursion code in the lecture slides.	*/
+
+	/* Avoid code duplication by creating the nullV beforehand. */
+	vertex<T> nullV(0,0); //Create a fresh vertex
+	nullV.nullVertex = true; //Make it a null vertex
+
+	if (n.nullVertex) { 
+		return; //Do nothing if we are at a nullVertex, i.e. the child vertex did not exist in this case.
 	} else {
 		vector<vertex<T>> vertexChildren = mst.get_neighbours(n.id);
-		//Need to use if statements to make sure we don't get segmentation errors
-		//If left child exists do recursion with normal vertex, otherwise pass a nullvertrex.
-		if (vertexChildren.size() >= 1) { 
-			postOrderUtil(results, vertexChildren[0], mst);
+		//Need to use if statements to make sure we don't get segmentation errors (in case a vertex has only a left child or no children).
+		
+		//If left child exists do recursion with normal vertex, otherwise pass with a nullvertrex.
+		if (vertexChildren.size() >= 1) { // Greater than or equal meaning AT LEAST the left child exists
+			postOrderUtil(results, vertexChildren[0], mst); //Trigger recursion with left child
 		} else {
-			vertex<T> nullV(0,0);
-			nullV.nullVertex = true;
-			postOrderUtil(results, nullV, mst);
+			/* Left child doesn't exist but still need to pass nullvertex to be consistent with algorithm pattern. */
+			postOrderUtil(results, nullV, mst); //Trigger recursion with null vertex.
 		}
-		//If right child exists do recursion with normal vertex, otherwise pass a nullvertrex.
-		if (vertexChildren.size() > 1) {
-			postOrderUtil(results, vertexChildren[1], mst);
+
+		//If right child exists do recursion with normal vertex, otherwise pass with a nullvertrex.
+		if (vertexChildren.size() > 1) { // Greater than means the right child MUST exists (as well as left).
+			postOrderUtil(results, vertexChildren[1], mst); //Trigger recursion with right child
 		} else {
-			vertex<T> nullV(0,0); //Create a fresh vertex
-			nullV.nullVertex = true; //Make it a null vertex
-			postOrderUtil(results, nullV, mst); 
+			/* Right child doesn't exist but still need to pass nullvertex to be consistent with algorithm pattern. */
+			postOrderUtil(results, nullV, mst); //Trigger recursion with null vertex.
 		};
 		
-		results.push_back(n);
+		results.push_back(n); //Only different part of postOrder is to have the push_back at after both ifs.
 	}
 }
 
@@ -741,11 +756,25 @@ void directed_graph<T>::postOrderUtil(vector<vertex<T>>& results, const vertex<T
 template <typename T>
 vector<vertex<T>> directed_graph<T>::significance_sorting() 
 { 
-	vector<vertex<T>> sortedVertices = vertices;
+	vector<vertex<T>> sortedVertices = vertices; /* Make a copy of the vertices vector to be sorted. */
 
-	/* If time permits, I want to implement a method to sort by a new vertex member named "influence".
-	 * Influence variable will be calculated with weighted ratio between followers (vertex weight) and likability (incoming edge weight). */
-	sort(sortedVertices.begin(), sortedVertices.end(), greater<vertex<T>>());  /* Sort by vertex weight only. */
+	/* Calculate the popularity of each vertex (twitter user) by summing how many times the user was liked and their follower count.
+	 * This will be summed against vertex weight (amt of followers) and will provide, in my opinion,
+	 * a decent means to rank users based on "popularity". */
+	
+	for (int i = 0; i < sortedVertices.size(); i++) {
+		double popularityCount = 0;
+		for (int j=0; j<adj_matrix[i].size(); j++) {
+			/* This is the to column for every vertex, this means this is the number of times any	*
+			 * particular vertex (user) has liked this particular vertex (user).					*/
+			popularityCount += (double)adj_matrix[j][i];
+		}
+		sortedVertices[i].popularity = (sortedVertices[i].weight + popularityCount);
+	}
+
+	/* See greater operator function definition in vertex class, it essentially will compare vertex popularity	*
+	 * and sort in decreasing order using what was just calculated above. 										*/
+	sort(sortedVertices.begin(), sortedVertices.end(), greater<vertex<T>>());  /* Sort by vertex popularity using <algrithm> library. */
 
 	return sortedVertices; 
 }
