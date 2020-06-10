@@ -25,6 +25,9 @@ public:
 					//how many times they were liked by other vertices. Calculated during sort.
 	bool nullVertex; //Bool to be used to indicate a nullVertex, useful for MST traversal functions
 
+	/*For use with Tarjan's algorithm*/
+	vector<vertex<T>> dfn;
+
 	vertex(int v_id, T v_weight) : id(v_id), weight(v_weight) { // constructor
 		popularity = 0;
 		nullVertex = false;
@@ -85,6 +88,8 @@ public:
 	~directed_graph(); //A destructor. Depending on how you do things, this may not be necessary.
 	void print_matrix(); //Only for testing
 	
+	vector<vector<T>> get_matrix();
+
 	vertex<T> get_vertex(const int& u_id); //Defined by me, used to get vertex by id
 	bool vector_contains(const vector<vertex<T>>&, const int&); //Defined by me, used to know if a vector contains a particular vertex.
 
@@ -132,6 +137,12 @@ public:
 // Define all your methods down here (or move them up into the header, but be careful you don't double up). If you want to move this into another file, you can, but you should #include the file here.
 // Although these are just the same names copied from above, you may find a few more clues in the full method headers.
 // Note also that C++ is sensitive to the order you declare and define things in - you have to have it available before you use it.
+
+/* Needed for access in directed_graph_alogithms */
+template <typename T> 
+vector<vector<T>> directed_graph<T>::get_matrix() {
+	return adj_matrix;
+}
 
 //Print matrix function, needed for testing purposes.
 
