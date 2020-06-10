@@ -6,7 +6,7 @@ This repository is here as a self-reference of this assignment and useful backup
 
 See below for original assessment specification and description:
 
-## Overview
+## Overview for Part 1 of 2
 Your task is to implement a directed_graph class, where each node/edge has a weight.
 
 For example, the following weighted directed graph has five nodes { A, B, C, D, E } and seven edges { (A, B), (A, C), (B, E), (C, D), (D, A), (D, C), (D, E)}. Node C has a weight of 400, and its incident edges: (A, C) has the weight of 9; (D, C) has the weight of 7; (C, D) has the weight of 4.
@@ -62,3 +62,20 @@ The assignment will be marked against three components: functionality, design an
 
 All being well, assuming you submit before the deadline and attend your Week 9-10 tutorials (in the class you are actually enrolled in - exceptions will only be made for cases where attendance at your enrolled tutorial is impossible), we aim to return the marks for the assignment within a week of the tutorial. The "mark" button will become available two weeks before the due date, which is Friday 8 May 2020, to give you some peacetime to focus on your assignment.
 
+## Overview for Part 2 of 2
+You task is to code a small collection of graph algorithms, based on your directed_graph class for assignment 1 (all vertices and edges have positive weights): 
+- Shortest paths.
+- Strongly connected components.
+- Topological sort.
+
+Besides the above, the class should offer an operation to solve the following open question:
+- Consider each vertex as a city, vertex weight as the city's population, and the weight of each directed edge as the cost of delivering any amount of goods from one city to another. Given a city that plans to deliver goods to all other cities, can you find a way to deliver the goods to every other city with the minimum average-delivery-cost per person? Your function should return this minimum cost-per-person.
+
+![Example Graph 2.](https://imgur.com/0WOm6iL.png)
+
+For example, in the above graph, A and C have the population of 800 and 400, respectively, and it takes the cost of 900 to deliver any amout of goods from A to C while there is no way to deliver the good directly from C to A.
+
+Suppose A -> B, A -> C, A -> C -> D, A -> B -> E are the paths you use to deliver goods from A to other cities, your function should return ( cost(A->B) + cost (A->C) + cost(C->D) + cost(B->E) ) / (the total population of B,C,D,E) = (600+900+4000+3000)/(300+400+710+221) = 5. Your tasks is to figure out the minimal return possible by determining the optimal paths for the delivery. Note that, you can deliver any amout of goods at a fixed cost between two adjacent cities; therefore, you only need to countcost(A-C) and cost(A->B) once in this example.
+
+**Marking Schedule**
+All being well, assuming you submit before the deadline and attend your Week 12 tutorial (in the class you are actually enrolled in - exceptions will only be made for cases where attendance at your enrolled tutorial is impossible), we aim to return the marks for the assignment within a week of the tutorial. The "mark" button will become available two weeks before the due date, which is Friday 29 May 2020, to give you some peacetime to focus on your assignment.
