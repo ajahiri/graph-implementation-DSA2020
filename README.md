@@ -1,5 +1,5 @@
 # graph-implementation-DSA2020
-Assignment 1 of Data Structures and Alogirthms (31251) - Graph Implementation in C++
+Assignment 1 and 2 of Data Structures and Alogirthms (31251) - Graph Implementation in C++
 Task is to implement a weighted, directed graph with weighted vertices in C++.
 
 This repository is here as a self-reference of this assignment and useful backup. Assignment was part of Data Structures and Algorithms class (31251) taken in Autumn 2020.
